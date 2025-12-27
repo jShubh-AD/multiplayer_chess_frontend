@@ -46,14 +46,17 @@ class _FindGameState extends State<FindGame> {
       appBar: AppBar(title: Text("My Chess")),
       body: Center(
         child: ElevatedButton(
-          onPressed: () async{
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12)
+          ),
+          onPressed: () async {
             try {
               channel = WebSocketChannel.connect(
                 Uri.parse("wss://cljmb8ss-8000.inc1.devtunnels.ms/ws"),
               );
+              setState(() => isWaiting = true);
               channel.stream.listen((message) {
                 if (message == "waiting") {
-                  setState(() => isWaiting = true);
                   Fluttertoast.showToast(
                     msg: "Waiting for another player to join.",
                   );
@@ -74,7 +77,18 @@ class _FindGameState extends State<FindGame> {
               Fluttertoast.showToast(msg: "An error occured please try again");
             }
           },
-          child: isWaiting ? Center(child: CircularProgressIndicator(color: Colors.orange),) : Text("Find game"),
+          child: isWaiting
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color:Colors.orange
+                      ),
+                  ),
+                )
+              : Text("Find game"),
         ),
       ),
     );

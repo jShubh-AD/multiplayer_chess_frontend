@@ -23,11 +23,13 @@ class _GamePageState extends State<GamePage> {
         title: const Text('My Chess'),
       ),
       body: Center(
-        child: ChessBoard(
-          controller: controller,
-          boardColor: BoardColor.orange,
-          boardOrientation: PlayerColor.white,
-        ),
+        child: StreamBuilder(stream: widget.channel.stream, builder: (context, snapshot){
+          return ChessBoard(
+            controller: controller,
+            boardColor: BoardColor.orange,
+            boardOrientation: PlayerColor.white,
+          );
+        })
       ),
     );
   }
