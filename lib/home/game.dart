@@ -13,7 +13,6 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-
   final ChessBoardController controller = ChessBoardController();
 
   @override
@@ -23,7 +22,9 @@ class _GamePageState extends State<GamePage> {
         title: const Text('My Chess'),
       ),
       body: Center(
-        child: StreamBuilder(stream: widget.channel.stream, builder: (context, snapshot){
+        child: StreamBuilder(
+          stream: widget.channel.stream, 
+          builder: (context, snapshot){
           return ChessBoard(
             controller: controller,
             boardColor: BoardColor.orange,

@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:developer';
 
+import 'package:chess_app/core/constants.dart';
 import 'package:chess_app/home/game.dart';
+import 'package:chess_app/home/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -56,14 +59,20 @@ class _FindGameState extends State<FindGame> {
               );
               setState(() => isWaiting = true);
               channel.stream.listen((message) {
-                if (message == "waiting") {
+
+                 final json = jsonDecode(message);
+
+                GameMessage gameMsg = GameMessage.fromJson(json);
+                log("${gameMsg.toJson()}");
+
+                if (gameMsg.type == MessageType.waiting) {
                   Fluttertoast.showToast(
-                    msg: "Waiting for another player to join.",
+                    msg: gameMsg.message ?? "Waiting for another player to join.",
                   );
                 }
-                if (message == "game_start") {
+                if (gameMsg.type == MessageType.gameStart) {
                   setState(() => isWaiting = false);
-                  Fluttertoast.showToast(msg: "Starting Game.");
+                  Fluttertoast.showToast(msg: gameMsg.message ?? "Starting Game.");
                   Navigator.push(
                     context,
                     MaterialPageRoute(
