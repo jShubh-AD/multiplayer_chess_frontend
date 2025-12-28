@@ -37,7 +37,6 @@ dependencies:
   web_socket_channel: ^3.0.3
   fluttertoast: ^9.0.0
   chessground: ^7.3.0
-  chess: ^0.7.0
   get: ^4.7.3
   google_fonts: ^6.3.3
 

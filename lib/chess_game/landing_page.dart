@@ -2,14 +2,15 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chess_app/chess_game/local_game.dart';
+import 'package:chess_app/chess_game/online_game.dart';
 import 'package:chess_app/core/constants.dart';
-import 'package:flutter/material.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
+import 'package:fast_immutable_collections/src/imap/imap.dart';
+import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:fast_immutable_collections/src/imap/imap.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -95,21 +96,26 @@ class _LandingPageState extends State<LandingPage> {
     final allMoves = [
       for (final entry in position.legalMoves.entries)
         for (final dest in entry.value.squares)
-          NormalMove(from: entry.key, to: dest)
+          NormalMove(from: entry.key, to: dest),
     ];
     if (allMoves.isNotEmpty) {
       NormalMove mv = (allMoves..shuffle()).first;
       // Auto promote to a random non-pawn role
       if (isPromotionPawnMove(mv)) {
-        final potentialRoles =
-        Role.values.where((role) => role != Role.pawn).toList();
+        final potentialRoles = Role.values
+            .where((role) => role != Role.pawn)
+            .toList();
         final role = potentialRoles[random.nextInt(potentialRoles.length)];
         mv = mv.withPromotion(role);
       }
 
       setState(() {
         position = position.playUnchecked(mv);
-        lastMove = NormalMove(from: mv.from, to: mv.to, promotion: mv.promotion);
+        lastMove = NormalMove(
+          from: mv.from,
+          to: mv.to,
+          promotion: mv.promotion,
+        );
         fen = position.fen;
         validMoves = makeLegalMoves(position);
       });
@@ -165,48 +171,58 @@ class _LandingPageState extends State<LandingPage> {
         children: [
           // refresh game
           FloatingActionButton(
-              onPressed: () => setState(() {
-                position = Chess.initial;
-                fen = position.fen;
-                validMoves = makeLegalMoves(position);
-                lastMove = null;
-                lastPos = null;
-              }),
-              child:Icon(Icons.refresh)
+            onPressed: () => setState(() {
+              position = Chess.initial;
+              fen = position.fen;
+              validMoves = makeLegalMoves(position);
+              lastMove = null;
+              lastPos = null;
+            }),
+            child: Icon(Icons.refresh),
           ),
           const SizedBox(height: 10),
           // undo move
           FloatingActionButton(
-              onPressed: lastPos != null
-                  ? () => setState(() {
+            onPressed: lastPos != null
+                ? () => setState(() {
                     position = lastPos!;
                     fen = position.fen;
                     validMoves = makeLegalMoves(position);
                     lastMove = null;
                     lastPos = null;
-                  }) : null,
-              child:Icon(Icons.undo)
+                  })
+                : null,
+            child: Icon(Icons.undo),
           ),
         ],
       ),
       appBar: AppBar(
-          title: Text(
-              'My Chess',
-              style: Get.textTheme.titleLarge
-          )
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        foregroundColor:  Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          "My Chess",
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // chess board
           Chessboard(
-            size: Get.width*1,
+            size: Get.width * 1,
             fen: fen,
             lastMove: lastMove,
             orientation: Side.white,
             game: GameData(
               isCheck: position.isCheck,
-              playerSide: PlayerSide.both, // FREE PLAY
+              playerSide: PlayerSide.both,
+              // FREE PLAY
               validMoves: validMoves,
               sideToMove: position.turn,
               onMove: _onUserMoveAgainstBot,
@@ -217,12 +233,12 @@ class _LandingPageState extends State<LandingPage> {
               pieceAssets: pieceSet.assets,
               dragTargetKind: DragTargetKind.square,
               animationDuration: const Duration(milliseconds: 200),
-              dragFeedbackScale:  1.5,
+              dragFeedbackScale: 1.5,
               borderRadius: BorderRadiusGeometry.circular(25),
-              border:  BoardBorder(width: 16, color: Colors.brown.shade800)
+              border: BoardBorder(width: 16, color: Colors.brown.shade800),
             ),
           ),
-          SizedBox(height: Get.height*0.1),
+          SizedBox(height: Get.height * 0.1),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -230,22 +246,36 @@ class _LandingPageState extends State<LandingPage> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    Get.to(()=> LocalGame(playMode: PlayMode.offline));
+                    Get.to(
+                      () => LocalGame(playMode: PlayMode.offline),
+                      transition: Transition.cupertino,
+                    );
                   },
                   child: Text(
                     'Offline',
-                    style: Get.textTheme.titleMedium,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    Fluttertoast.showToast(msg: "Will be added soon.");
+                    Get.to(
+                      () => OnlineGame(),
+                      transition: Transition.cupertino,
+                    );
                   },
                   child: Text(
                     'Multiplayer',
-                    style: Get.textTheme.titleMedium,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ],
