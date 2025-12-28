@@ -1,12 +1,19 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:chess_app/chess_game/landing_page.dart';
 import 'package:chess_app/core/constants.dart';
 import 'package:chess_app/home/game.dart';
 import 'package:chess_app/home/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+
+final StreamController<GameMessage> gameStream = StreamController<GameMessage>.broadcast();
 
 void main() {
   runApp(const MyApp());
@@ -18,15 +25,50 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'My Chess',
+    return GetMaterialApp(
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.orange.withOpacity(0.2),
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF1C1A17),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFD18B47),
+          secondary: Color(0xFFB58863),
+          surface: Color(0xFF1E1E1E),
+          background: Color(0xFF121212),
+          onPrimary: Colors.black,
+          onSecondary: Colors.black,
+          onSurface: Colors.white,
+          onBackground: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        textTheme: GoogleFonts.poppinsTextTheme().apply(
+            bodyColor: const Color(0xFF000000),
+            displayColor: const Color(0xFF000000)
+        ).copyWith(
+          bodyLarge: const TextStyle(fontWeight: FontWeight.w400),
+          bodyMedium: const TextStyle(fontWeight: FontWeight.w500),
+          titleLarge: const TextStyle(fontWeight: FontWeight.w600),
+          headlineSmall: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFFD18B47),
+            foregroundColor: Colors.black,
+            minimumSize: const Size(double.infinity, 48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
       ),
-      home: FindGame(),
+      home: const LandingPage(),
     );
+
+
   }
 }
 
@@ -38,12 +80,12 @@ class FindGame extends StatefulWidget {
 }
 
 bool isWaiting = false;
+late WebSocketChannel channel;
+  StreamSubscription? subscription;
 
 class _FindGameState extends State<FindGame> {
   @override
   Widget build(BuildContext context) {
-    late WebSocketChannel channel;
-
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(title: Text("My Chess")),
@@ -58,11 +100,11 @@ class _FindGameState extends State<FindGame> {
                 Uri.parse("wss://cljmb8ss-8000.inc1.devtunnels.ms/ws"),
               );
               setState(() => isWaiting = true);
-              channel.stream.listen((message) {
+              subscription = channel.stream.listen((message) {
 
                  final json = jsonDecode(message);
-
                 GameMessage gameMsg = GameMessage.fromJson(json);
+                gameStream.add(gameMsg);
                 log("${gameMsg.toJson()}");
 
                 if (gameMsg.type == MessageType.waiting) {
@@ -73,12 +115,12 @@ class _FindGameState extends State<FindGame> {
                 if (gameMsg.type == MessageType.gameStart) {
                   setState(() => isWaiting = false);
                   Fluttertoast.showToast(msg: gameMsg.message ?? "Starting Game.");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (c) => GamePage(channel: channel),
-                    ),
-                  );
+                  // Navigator.push(
+                  //   context,
+                  //   // MaterialPageRoute(
+                  //   //   builder: (c) => GamePage(channel: channel, clr: gameMsg.color!,),
+                  //   // ),
+                  // );
                 }
               });
             } catch (e, st) {

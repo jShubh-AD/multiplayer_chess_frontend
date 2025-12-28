@@ -1,9 +1,9 @@
-enum Color {
+enum GameColor {
   black('black'),
   white('white');
 
   final String value;
-  const Color(this.value);
+  const GameColor(this.value);
 }
 
 enum MessageType {
@@ -21,3 +21,9 @@ enum MessageType {
   final String value;
   const MessageType(this.value);
 }
+
+enum PlayMode {
+  offline,
+  bot,
+}
+
