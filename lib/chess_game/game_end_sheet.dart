@@ -102,7 +102,7 @@ class GameEndBottomSheet extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'Play Again',
+                'Rematch',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

@@ -39,6 +39,7 @@ dependencies:
   chessground: ^7.3.0
   get: ^4.7.3
   google_fonts: ^6.3.3
+  dio: ^5.9.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1

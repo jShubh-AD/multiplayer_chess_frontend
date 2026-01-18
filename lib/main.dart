@@ -1,8 +1,11 @@
 import 'package:chess_app/chess_game/landing_page.dart';
+import 'package:chess_app/core/ping_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  PingService.start();
   runApp(const MyApp());
 }
 
