@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'package:chess_app/chess_game/game_end_sheet.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,7 @@ class _OnlineGameState extends State<OnlineGame> {
   // socket
   late WebSocketChannel chanel;
   StreamSubscription? subs;
-  final uri = Uri.parse("wss://cljmb8ss-8000.inc1.devtunnels.ms/ws");
+  final uri = Uri.parse("wss://my-chess-pp9f.onrender.com/ws");
 
   // chess board variables
   Position position = Chess.initial;
@@ -103,24 +104,52 @@ class _OnlineGameState extends State<OnlineGame> {
   // checking game state on every move (e.g: checkmate, draw, game over etc)
   void _checkGameState() {
     if (position.isCheckmate) {
-      Fluttertoast.showToast(
-        msg: position.turn == Side.white
-            ? 'Black wins by checkmate'
-            : 'White wins by checkmate',
+      GameEndBottomSheet.show(
+        context,
+        isCheckmate: true,
+        isDraw: false,
+        winner: position.turn == Side.white ? 'Black' : 'White',
+        onPlayAgain: _playAgain,
+        onFindAnotherPlayer: _findAnotherPlayer,
       );
     } else if (position.isStalemate) {
-      Fluttertoast.showToast(msg: 'Draw by stalemate');
+      GameEndBottomSheet.show(
+        context,
+        isCheckmate: false,
+        isDraw: true,
+        drawReason: 'Stalemate',
+        onPlayAgain: _playAgain,
+        onFindAnotherPlayer: _findAnotherPlayer,
+      );
     } else if (position.isInsufficientMaterial) {
-      Fluttertoast.showToast(msg: 'Draw by insufficient material');
-    }else if (position.isGameOver) {
-      Fluttertoast.showToast(msg: 'Game over');
+      GameEndBottomSheet.show(
+        context,
+        isCheckmate: false,
+        isDraw: true,
+        drawReason: 'Insufficient Material',
+        onPlayAgain: _playAgain,
+        onFindAnotherPlayer: _findAnotherPlayer,
+      );
+    } else if (position.isGameOver) {
+      GameEndBottomSheet.show(
+        context,
+        isCheckmate: false,
+        isDraw: true,
+        drawReason: 'Game Over',
+        onPlayAgain: _playAgain,
+        onFindAnotherPlayer: _findAnotherPlayer,
+      );
     }
   }
+
+
+  void _findAnotherPlayer(){}
+  void _playAgain(){}
 
   // handle disconnect
   void _disconnect() {
     if (!mounted) return;
-    Fluttertoast.showToast(msg: 'Disconnected');
+    Fluttertoast.showToast(msg: 'Left the game');
     Navigator.pop(context);
   }
 
@@ -181,25 +210,28 @@ class _OnlineGameState extends State<OnlineGame> {
             child: Column(
               children: [
                 _playerHeader(
+                  turnText: "Their turn",
                   highlight: position.turn != mySide,
                   label: "Opponent",
-                  captured: CapturedPiecesRow(
-                    isRotate: false,
-                    position: position,
-                    side: mySide == Side.white ? Side.black : Side.white,
-                    pieceAssets: pieceSet.assets,
-                  ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+                CapturedPiecesRow(
+                  isRotate: false,
+                  position: position,
+                  side: mySide,
+                  pieceAssets: pieceSet.assets,
+                ),
 
                 Expanded(
                   child: Center(
                     child: Chessboard(
-                      size: Get.width * 0.95,
+                      lastMove: lastMove,
+                      size: Get.width * 1,
                       orientation: mySide,
                       fen: fen,
                       game: GameData(
+                        isCheck: position.isCheck,
                         playerSide: mySide == Side.white
                             ? PlayerSide.white
                             : PlayerSide.black,
@@ -224,16 +256,18 @@ class _OnlineGameState extends State<OnlineGame> {
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                CapturedPiecesRow(
+                  isRotate: false,
+                  position: position,
+                  side: mySide == Side.white ? Side.black : Side.white,
+                  pieceAssets: pieceSet.assets,
+                ),
+
+                const SizedBox(height: 16),
 
                 _playerHeader(
+                  turnText: "Your turn",
                   label: "You",
-                  captured: CapturedPiecesRow(
-                    isRotate: false,
-                    position: position,
-                    side: mySide,
-                    pieceAssets: pieceSet.assets,
-                  ),
                   highlight: position.turn == mySide,
                 ),
               ],
@@ -244,15 +278,18 @@ class _OnlineGameState extends State<OnlineGame> {
           if (waiting)
             Container(
               color: Colors.black.withOpacity(0.65),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(strokeWidth: 3),
-                    SizedBox(height: 12),
+                    const CircularProgressIndicator(strokeWidth: 3),
+                    const SizedBox(height: 12),
                     Text(
                       "Waiting for another player…",
-                      style: TextStyle(fontSize: 16),
+                      style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16
+                      ),
                     ),
                   ],
                 ),
@@ -266,23 +303,51 @@ class _OnlineGameState extends State<OnlineGame> {
 
   Widget _playerHeader({
     required String label,
-    required Widget captured,
+    required String turnText,
     bool highlight = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: highlight ? Get.theme.primaryColor : Colors.white
-            )
+          Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: highlight ? Get.theme.primaryColor : Colors.grey
+              )
+            ),
+            child: Icon(Icons.person),
           ),
+
           const SizedBox(width: 12),
-          Expanded(child: captured),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: highlight ? Get.theme.primaryColor : Colors.white
+                )
+              ),
+              Text(
+                  turnText,
+                  style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: highlight ? Get.theme.primaryColor : Colors.grey
+                  )
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -1,16 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:chess_app/chess_game/landing_page.dart';
-import 'package:chess_app/core/constants.dart';
-import 'package:chess_app/home/game.dart';
-import 'package:chess_app/home/message_model.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,6 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
