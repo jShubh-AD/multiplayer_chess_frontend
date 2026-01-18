@@ -9,8 +9,7 @@ class PingService {
     await _callApi(); // call on app start
 
     _timer = Timer.periodic(
-      const Duration(minutes: 5),
-          (_) => _callApi(),
+      const Duration(minutes: 5), (_) => _callApi(),
     );
   }
 

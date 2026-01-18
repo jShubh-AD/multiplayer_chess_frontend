@@ -91,7 +91,6 @@ class GameEndBottomSheet extends StatelessWidget {
             height: 48,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
                 onPlayAgain();
               },
               style: ElevatedButton.styleFrom(
@@ -118,7 +117,6 @@ class GameEndBottomSheet extends StatelessWidget {
             height: 48,
             child: OutlinedButton(
               onPressed: () {
-                Navigator.pop(context);
                 onFindAnotherPlayer();
               },
               style: OutlinedButton.styleFrom(

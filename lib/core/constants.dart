@@ -8,8 +8,16 @@ enum GameColor {
 
 enum MessageType {
   waiting('waiting'),
+  disconnect("disconnect"),
   gameStart('game_start'),
   move('move'),
+  chat('chat'),
+
+  rematchRequest('rematch_request'),
+  rematchAccept('rematch_accept'),
+  rematchReject('rematch_reject'),
+  challenge('challenge'),
+
   gameOver('game_over'),
   checkMate('checkmate'),
   draw('draw'),

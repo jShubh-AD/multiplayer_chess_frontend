@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:chess_app/chess_game/game_end_sheet.dart';
+import 'package:chess_app/chess_game/landing_page.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../core/constants.dart';
 import '../home/message_model.dart';
+import 'package:get/get.dart';
 import 'capture_pieces.dart';
 
 class OnlineGame extends StatefulWidget {
@@ -24,7 +26,8 @@ class _OnlineGameState extends State<OnlineGame> {
   // socket
   late WebSocketChannel chanel;
   StreamSubscription? subs;
-  final uri = Uri.parse("wss://my-chess-pp9f.onrender.com/ws");
+  // final uri = Uri.parse("wss://my-chess-pp9f.onrender.com/ws");
+  final uri = Uri.parse("wss://cljmb8ss-8000.inc1.devtunnels.ms/ws");
 
   // chess board variables
   Position position = Chess.initial;
@@ -75,12 +78,24 @@ class _OnlineGameState extends State<OnlineGame> {
       case MessageType.gameStart:
         setState(() {
           waiting = false;
+          position = Chess.initial;
+          fen = kInitialBoardFEN;
+          validMoves = makeLegalMoves(Chess.initial);
+          promotionMove = null;
+          preMove = null;
+          lastMove = null;
+          lastPos = null;
           mySide = msg.color == "white" ? Side.white : Side.black;
         });
         break;
 
       case MessageType.move:
         _applyServerMove(msg.move);
+        break;
+
+      case MessageType.disconnect:
+        Fluttertoast.showToast(msg: msg.message ?? "Please find a new opponent");
+        Get.offAll(() => const LandingPage());
         break;
 
       default:
@@ -143,21 +158,29 @@ class _OnlineGameState extends State<OnlineGame> {
   }
 
 
-  void _findAnotherPlayer(){}
+  void _findAnotherPlayer(){
+    Get.back();
+    chanel.sink.add(jsonEncode({
+      "type":MessageType.challenge.value,
+      "message":"Player has left the game"
+    }));
+  }
+
   void _playAgain(){}
 
   // handle disconnect
   void _disconnect() {
     if (!mounted) return;
-    Fluttertoast.showToast(msg: 'Left the game');
-    Navigator.pop(context);
   }
 
   // local moves/ your moves push them to server
   void _localMove(NormalMove move, {bool? isDrop}){
     if(waiting) return;
     if (position.turn != mySide) return;
-    chanel.sink.add(move.uci);
+    chanel.sink.add(jsonEncode({
+      "type": MessageType.move.value,
+      "move": move.uci,
+    }));
   }
 
   // promotion moves

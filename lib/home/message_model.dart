@@ -36,6 +36,8 @@ class GameMessage {
     'message': message,
     'color': color,
     'turn': turn,
+    "board": board,
+    'move': move,
     'game_over': gameOver,
   };
 }
