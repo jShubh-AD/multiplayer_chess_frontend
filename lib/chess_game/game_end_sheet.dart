@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
-class GameEndBottomSheet extends StatelessWidget {
+class GameEndBottomSheet extends StatefulWidget {
   final bool isCheckmate;
   final bool isDraw;
   final String? winner;
@@ -17,6 +18,75 @@ class GameEndBottomSheet extends StatelessWidget {
     required this.onPlayAgain,
     required this.onFindAnotherPlayer,
   }) : super(key: key);
+
+  @override
+  State<GameEndBottomSheet> createState() => _GameEndBottomSheetState();
+
+  // Static method to show the bottom sheet easily
+  static void show(
+      BuildContext context, {
+        required bool isCheckmate,
+        required bool isDraw,
+        String? winner,
+        String? drawReason,
+        bool isWaiting = false,
+        required VoidCallback onPlayAgain,
+        required VoidCallback onFindAnotherPlayer,
+      }) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: true,
+      isScrollControlled: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => GameEndBottomSheet(
+        isCheckmate: isCheckmate,
+        isDraw: isDraw,
+        winner: winner,
+        drawReason: drawReason,
+        onPlayAgain: onPlayAgain,
+        onFindAnotherPlayer: onFindAnotherPlayer,
+      ),
+    );
+  }
+}
+
+class _GameEndBottomSheetState extends State<GameEndBottomSheet> {
+  Timer? _countdownTimer;
+  int _remainingSeconds = 10;
+  bool _isWaiting = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        timer.cancel();
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handlePlayAgain() {
+    setState(() {
+      _isWaiting = true;
+    });
+    _startCountdown(); // Start the countdown
+    widget.onPlayAgain(); // Call the callback to send WebSocket message
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,22 +118,26 @@ class GameEndBottomSheet extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: isCheckmate
+              color: widget.isCheckmate
                   ? const Color(0xFFFF9D4A).withOpacity(0.15)
                   : const Color(0xFFB58863).withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isCheckmate ? Icons.emoji_events_rounded : Icons.handshake_rounded,
+              widget.isCheckmate
+                  ? Icons.emoji_events_rounded
+                  : Icons.handshake_rounded,
               size: 40,
-              color: isCheckmate ? const Color(0xFFFF9D4A) : const Color(0xFFB58863),
+              color: widget.isCheckmate
+                  ? const Color(0xFFFF9D4A)
+                  : const Color(0xFFB58863),
             ),
           ),
           const SizedBox(height: 20),
 
           // Title
           Text(
-            isCheckmate ? 'Checkmate!' : 'Draw!',
+            widget.isCheckmate ? 'Checkmate!' : 'Draw!',
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -74,9 +148,9 @@ class GameEndBottomSheet extends StatelessWidget {
 
           // Subtitle
           Text(
-            isCheckmate
-                ? '$winner wins by checkmate'
-                : 'Game drawn by $drawReason',
+            widget.isCheckmate
+                ? '${widget.winner} wins by checkmate'
+                : 'Game drawn by ${widget.drawReason}',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -90,19 +164,22 @@ class GameEndBottomSheet extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                onPlayAgain();
-              },
+              onPressed: _isWaiting ? null : _handlePlayAgain,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD18B47),
                 foregroundColor: Colors.black,
+                disabledBackgroundColor:
+                const Color(0xFFD18B47).withOpacity(0.5),
+                disabledForegroundColor: Colors.black.withOpacity(0.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Rematch',
-                style: TextStyle(
+              child: Text(
+                _isWaiting
+                    ? 'Waiting for opponent ($_remainingSeconds s)'
+                    : 'Rematch',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -116,9 +193,7 @@ class GameEndBottomSheet extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: OutlinedButton(
-              onPressed: () {
-                onFindAnotherPlayer();
-              },
+              onPressed: widget.onFindAnotherPlayer,
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF1C1A17),
                 side: const BorderSide(
@@ -140,33 +215,6 @@ class GameEndBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-      ),
-    );
-  }
-
-  // Static method to show the bottom sheet easily
-  static void show(
-      BuildContext context, {
-        required bool isCheckmate,
-        required bool isDraw,
-        String? winner,
-        String? drawReason,
-        required VoidCallback onPlayAgain,
-        required VoidCallback onFindAnotherPlayer,
-      }) {
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: true,
-      isScrollControlled: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GameEndBottomSheet(
-        isCheckmate: isCheckmate,
-        isDraw: isDraw,
-        winner: winner,
-        drawReason: drawReason,
-        onPlayAgain: onPlayAgain,
-        onFindAnotherPlayer: onFindAnotherPlayer,
       ),
     );
   }

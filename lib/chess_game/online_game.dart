@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:chess_app/chess_game/game_end_sheet.dart';
 import 'package:chess_app/chess_game/landing_page.dart';
+import 'package:chess_app/chess_game/rematch_request.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../core/constants.dart';
 import '../home/message_model.dart';
-import 'package:get/get.dart';
 import 'capture_pieces.dart';
 
 class OnlineGame extends StatefulWidget {
@@ -93,6 +93,36 @@ class _OnlineGameState extends State<OnlineGame> {
         _applyServerMove(msg.move);
         break;
 
+      case MessageType.rematchRequest:
+      // show bottom sheet and ask for rematch
+      Get.back();
+      RematchRequestSheet.show(
+          context,
+          onJoinNow: (){
+            chanel.sink.add(jsonEncode({
+              "type":MessageType.rematchAccept.value,
+            }));
+          },
+          onDecline: () =>Get.offAll(() => const LandingPage())
+      );
+      break;
+
+      case MessageType.rematchAccept:
+        // rematch accepted start new game
+        Get.back(closeOverlays: true);
+        setState(() {
+          waiting = false;
+          position = Chess.initial;
+          fen = kInitialBoardFEN;
+          validMoves = makeLegalMoves(Chess.initial);
+          promotionMove = null;
+          preMove = null;
+          lastMove = null;
+          lastPos = null;
+          mySide = msg.color == "white" ? Side.white : Side.black;
+        });
+        break;
+
       case MessageType.disconnect:
         Fluttertoast.showToast(msg: msg.message ?? "Please find a new opponent");
         Get.offAll(() => const LandingPage());
@@ -166,7 +196,11 @@ class _OnlineGameState extends State<OnlineGame> {
     }));
   }
 
-  void _playAgain(){}
+  void _playAgain(){
+    chanel.sink.add(jsonEncode({
+      "type":MessageType.rematchRequest.value,
+    }));
+  }
 
   // handle disconnect
   void _disconnect() {
@@ -265,6 +299,7 @@ class _OnlineGameState extends State<OnlineGame> {
                         onPromotionSelection: _onPromotionSelection,
                       ),
                       settings: ChessboardSettings(
+                        dragTargetKind: DragTargetKind.square,
                         pieceAssets: pieceSet.assets,
                         borderRadius: BorderRadius.circular(24),
                         border: BoardBorder(
