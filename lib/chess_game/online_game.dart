@@ -7,11 +7,14 @@ import 'package:chess_app/chess_game/rematch_request.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' hide MessageType;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../core/constants.dart';
+import '../core/voice_service.dart';
 import '../home/message_model.dart';
 import 'capture_pieces.dart';
 
@@ -23,11 +26,23 @@ class OnlineGame extends StatefulWidget {
 }
 
 class _OnlineGameState extends State<OnlineGame> {
+
+
+  // webrtc variables
+  VoiceService? voice;
+  bool voiceStarted = false;
+
+  bool micMuted = false;
+  bool speakerOff = false;
+
+
+
+
   // socket
   late WebSocketChannel chanel;
   StreamSubscription? subs;
-  // final uri = Uri.parse("wss://my-chess-pp9f.onrender.com/ws");
-  final uri = Uri.parse("wss://cljmb8ss-8000.inc1.devtunnels.ms/ws");
+  final uri = Uri.parse("wss://my-chess-pp9f.onrender.com/ws");
+  // final uri = Uri.parse("ws://cljmb8ss-8000.inc1.devtunnels.ms/ws");
 
   // chess board variables
   Position position = Chess.initial;
@@ -67,7 +82,26 @@ class _OnlineGameState extends State<OnlineGame> {
   }
 
   void _socketMessage(dynamic event) {
-    final msg = GameMessage.fromJson(jsonDecode(event));
+
+    final data = jsonDecode(event);
+
+    // Handle WebRTC first
+    if (data['type'] == 'offer') {
+      voice?.onOffer(data['sdp']);
+      return;
+    }
+
+    if (data['type'] == 'answer') {
+      voice?.onAnswer(data['sdp']);
+      return;
+    }
+
+    if (data['type'] == 'ice' && data['candidate'] != null) {
+      voice?.onIce(Map.from(data['candidate']));
+      return;
+    }
+
+    final msg = GameMessage.fromJson(data);
 
     switch (msg.type){
 
@@ -86,6 +120,7 @@ class _OnlineGameState extends State<OnlineGame> {
           lastMove = null;
           lastPos = null;
           mySide = msg.color == "white" ? Side.white : Side.black;
+          _startVoice();
         });
         break;
 
@@ -103,13 +138,15 @@ class _OnlineGameState extends State<OnlineGame> {
               "type":MessageType.rematchAccept.value,
             }));
           },
-          onDecline: () =>Get.offAll(() => const LandingPage())
+          onDecline: () => Get.offAll(() => const LandingPage())
       );
       break;
 
       case MessageType.rematchAccept:
         // rematch accepted start new game
+        Fluttertoast.showToast(msg: "Get ready for rematch");
         Get.back(closeOverlays: true);
+
         setState(() {
           waiting = false;
           position = Chess.initial;
@@ -235,6 +272,7 @@ class _OnlineGameState extends State<OnlineGame> {
   @override
   void dispose(){
     chanel.sink.close();
+    voice?.dispose();
     subs?.cancel();
     super.dispose();
   }
@@ -266,10 +304,40 @@ class _OnlineGameState extends State<OnlineGame> {
           SafeArea(
             child: Column(
               children: [
-                _playerHeader(
-                  turnText: "Their turn",
-                  highlight: position.turn != mySide,
-                  label: "Opponent",
+                Row(
+                  children: [
+                    Expanded(
+                      flex:1,
+                      child: _playerHeader(
+                        turnText: "Their turn",
+                        highlight: position.turn != mySide,
+                        label: "Opponent",
+                      ),
+                    ),
+                    IconButton(onPressed: (){
+                      setState(() => speakerOff = !speakerOff);
+                      speaker(!speakerOff);
+                    },
+                        icon: Icon(
+                          speakerOff
+                              ? Icons.volume_off
+                              : Icons.volume_up,
+                          color: Colors.white,
+                        )
+                    ),
+                    IconButton(
+                        onPressed: (){
+                          setState(() => micMuted = !micMuted);
+                          voice?.mute(micMuted);
+                          },
+                        icon: Icon(
+                          micMuted
+                              ? Icons.mic_off
+                              : Icons.mic,
+                      color: Colors.white,
+                    )
+                    )
+                  ],
                 ),
 
                 const SizedBox(height: 16),
@@ -411,5 +479,28 @@ class _OnlineGameState extends State<OnlineGame> {
     );
   }
 
+  Future _requestMic() async {
+    await Permission.microphone.request();
+  }
+
+  void speaker(bool on) {
+    Helper.setSpeakerphoneOn(on);
+  }
+
+
+  Future _startVoice() async {
+    if (voiceStarted) return;
+
+    _requestMic();
+
+    voice = VoiceService(chanel);
+    await voice?.init();
+
+    voiceStarted = true;
+
+    if (mySide == Side.white) {
+      await voice?.start();
+    }
+  }
 
 }

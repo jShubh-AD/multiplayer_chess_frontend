@@ -24,7 +24,11 @@ enum MessageType {
   illegalMove('illegal_move'),
   whiteWins('white'),
   blackWins('black'),
-  timeout('timeout');
+  timeout('timeout'),
+
+  offer("offer"),
+  answer("answer"),
+  ice("ice");
 
   final String value;
   const MessageType(this.value);

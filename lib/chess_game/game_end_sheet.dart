@@ -69,7 +69,6 @@ class _GameEndBottomSheetState extends State<GameEndBottomSheet> {
         });
       } else {
         timer.cancel();
-        Navigator.pop(context);
       }
     });
   }

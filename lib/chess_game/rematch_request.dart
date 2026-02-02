@@ -21,18 +21,10 @@ class RematchRequestSheet {
       backgroundColor: Colors.transparent,
       builder: (context) => _RematchRequestContent(
         countdown: _countdown!,
-        onJoinNow: () {
-          _cancelTimer();
-          onJoinNow();
-        },
-        onDecline: () {
-          _cancelTimer();
-          onDecline();
-        },
+        onJoinNow: () {_cancelTimer(); onJoinNow(); },
+        onDecline: () {_cancelTimer(); onDecline(); },
       ),
-    ).whenComplete(() {
-      _cancelTimer();
-    });
+    ).whenComplete(() { _cancelTimer(); });
 
     // Start countdown
     _startCountdown(context, onJoinNow);
@@ -45,7 +37,6 @@ class RematchRequestSheet {
       } else {
         timer.cancel();
         if (context.mounted) {
-          Navigator.pop(context);
           onJoinNow();
         }
       }
@@ -157,7 +148,7 @@ class _RematchRequestContent extends StatelessWidget {
             height: 48,
             child: ElevatedButton(
               onPressed: (){
-                Navigator.pop(context);
+                // Navigator.pop(context);
                 onJoinNow();
               },
               style: ElevatedButton.styleFrom(
